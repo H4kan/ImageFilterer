@@ -80,6 +80,12 @@ namespace ImageFiltererV2
 
         private void PaintBrush(object sender, MouseEventArgs e)
         {
+            if (this.form.filtersChanged)
+            {
+                this.form.filtersChanged = false;
+                this.StopBrushTracking();
+                this.StartBrushTracking();
+            }
             this.pictureBox.MouseDown -= PaintBrush;
             this.isPainting = true;
             this.pictureBox.MouseUp += ReleaseBrush;
@@ -104,12 +110,11 @@ namespace ImageFiltererV2
 
             if (this.isPainting)
             {
-                
                 polygonLessgraphics.FillEllipse(this.filterBrush, rect);
             }
 
             this.form.RedrawPolygons();
-            
+
             graphics.DrawEllipse(Pens.Black, rect);
             this.pictureBox.Invalidate();
         }

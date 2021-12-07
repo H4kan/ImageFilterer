@@ -18,6 +18,8 @@ namespace ImageFiltererV2
     {
         const int RGB_SIZE = 256;
 
+        Size PICTURE_MAX_SIZE;
+
         public DirectBitmap Bmp { get; set; }
         public DirectBitmap PolygonLessBmp { get; set; }
 
@@ -45,6 +47,12 @@ namespace ImageFiltererV2
 
         private Brush Brush { get; set; }
 
+        public bool filtersChanged { get; set; }
+
+        public List<Point> OwnFunctionPoints { get; set; }
+
+        public int[] mappedPoints { get; set; }
+
         public Form1()
         {
             InitializeComponent();
@@ -53,6 +61,7 @@ namespace ImageFiltererV2
             this.PolygonLessBmp = null;
             this.OriginalBmp = null;
             this.pictureBox.Image = this.Bmp.Bitmap;
+            this.PICTURE_MAX_SIZE = this.pictureBox.Size;
 
             this.LineService = new LineService(this.Bmp, pictureBox);
             this.FillingService = new FillingService(this.LineService, this);
@@ -62,6 +71,14 @@ namespace ImageFiltererV2
             this.SelectedFilter = FilterType.Identity;
 
             this.Brush = new Brush(this.pictureBox, this);
+
+            this.ownFunctionChart.ChartAreas[0].AxisX.Minimum = 0;
+            this.ownFunctionChart.ChartAreas[0].AxisX.Maximum = RGB_SIZE - 1;
+            this.ownFunctionChart.ChartAreas[0].AxisY.Minimum = 0;
+            this.ownFunctionChart.ChartAreas[0].AxisY.Maximum = RGB_SIZE - 1;
+
+            this.OwnFunctionPoints = new List<Point>();
+            this.mappedPoints = new int[RGB_SIZE];
         }
 
 
@@ -103,9 +120,13 @@ namespace ImageFiltererV2
             {
                 var image = Image.FromFile(openFileDialog.FileName);
 
+                var actualWidth = Math.Min(image.Width, this.PICTURE_MAX_SIZE.Width);
+                var actualHeight = Math.Min(image.Height, this.PICTURE_MAX_SIZE.Height);
+                this.pictureBox.Size = new Size(actualWidth, actualHeight);
+
                 using (Graphics g = Graphics.FromImage(this.Bmp.Bitmap))
                 {
-                    g.DrawImage(image, 0, 0, image.Width, image.Height);
+                    g.DrawImage(image, 0, 0, actualWidth, actualHeight);
                 }
                 if (this.PolygonLessBmp != null)
                     this.PolygonLessBmp.Dispose();
@@ -124,6 +145,7 @@ namespace ImageFiltererV2
                 this.GetColorCountFromImage();
                 this.InitCharts();
                 this.filtersPanel.Visible = true;
+                this.pictureBox.Visible = true;
             }
         }
 
@@ -269,7 +291,11 @@ namespace ImageFiltererV2
             this.SelectedFilter = (FilterType)index;
 
             this.DisplayFilterOptions();
+
+            this.filtersChanged = true;
+
         }
+
 
         private void HideFilterOptions()
         {
@@ -277,6 +303,7 @@ namespace ImageFiltererV2
             this.contrastTrackBar.Visible = false;
             this.gammaLabel.Visible = false;
             this.gammaBox.Visible = false;
+            this.ownFunctionPanel.Visible = false;
         }
 
         private void DisplayFilterOptions()
@@ -304,6 +331,8 @@ namespace ImageFiltererV2
                     this.contrastTrackBar.Visible = true;
                     break;
                 case FilterType.OwnFunction:
+                    this.InitOwnFunctionChart();
+                    this.ownFunctionPanel.Visible = true;
                     break;
             }
 
@@ -312,11 +341,13 @@ namespace ImageFiltererV2
         private void brightnessChangeTrackBar_Scroll(object sender, EventArgs e)
         {
             this.brightnessChangeValue = this.brightnessChangeTrackBar.Value;
+            this.filtersChanged = true;
         }
 
         private void contrastTrackBar_Scroll(object sender, EventArgs e)
         {
             this.contrastValue = this.contrastTrackBar.Value;
+            this.filtersChanged = true;
         }
 
         private void gammaBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -332,10 +363,10 @@ namespace ImageFiltererV2
             {
                 e.Handled = true;
             }
-
+            this.filtersChanged = true;
         }
 
-        public void gammaBox_Validating(object sender, CancelEventArgs e)
+        public void validateGammaBox(object sender, CancelEventArgs e)
         {
             float value;
             if (!float.TryParse(gammaBox.Text, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out value) || value <= 0) 
@@ -347,15 +378,19 @@ namespace ImageFiltererV2
             {
                 this.gammaValue = value;
             }
-        } 
-            this.ExitAnyMode();
-            this.Mode = EditMode.Brush;
-            this.Brush.StartBrushTracking();
         }
 
         private void brushSizeTrackBar_Scroll(object sender, EventArgs e)
         {
             this.Brush.brushSize = this.brushSizeTrackBar.Value;
+            this.filtersChanged = true;
+        }
+
+        private void brushBtn_Click(object sender, EventArgs e)
+        {
+            this.ExitAnyMode();
+            this.Mode = EditMode.Brush;
+            this.Brush.StartBrushTracking();
         }
 
         public DirectBitmap GenerateFilteredBmp()
@@ -365,20 +400,80 @@ namespace ImageFiltererV2
             var picturePoly = new Polygon(0, 0);
             var horizontalUpperLine = new Line();
             horizontalUpperLine.AppendPoint(new Point(0, 0));
-            horizontalUpperLine.AppendPoint(new Point(0, this.Bmp.Width));
+            horizontalUpperLine.AppendPoint(new Point(this.Bmp.Width - 1, 0));
             var verticalRightLine = new Line();
-            verticalRightLine.AppendPoint(new Point(0, 0));
-            verticalRightLine.AppendPoint(new Point(0, this.Bmp.Width));
+            verticalRightLine.AppendPoint(new Point(this.Bmp.Width - 1, 0));
+            verticalRightLine.AppendPoint(new Point(this.Bmp.Width - 1, this.Bmp.Height - 1));
             var horizontalLowerLine = new Line();
-            horizontalLowerLine.AppendPoint(new Point(0, 0));
-            horizontalLowerLine.AppendPoint(new Point(0, this.Bmp.Width));
+            horizontalLowerLine.AppendPoint(new Point(this.Bmp.Width - 1, this.Bmp.Height - 1));
+            horizontalLowerLine.AppendPoint(new Point(0, this.Bmp.Height - 1));
             var verticalLeftLine = new Line();
-            horizontalUpperLine.AppendPoint(new Point(0, 0));
-            horizontalUpperLine.AppendPoint(new Point(0, this.Bmp.Width));
+            verticalLeftLine.AppendPoint(new Point(0, this.Bmp.Height - 1));
+            verticalLeftLine.AppendPoint(new Point(0, 0));
 
-            this.FillingService.InitTables()
+            picturePoly.AppendLine(horizontalUpperLine);
+            picturePoly.AppendLine(verticalRightLine);
+            picturePoly.AppendLine(horizontalLowerLine);
+            picturePoly.CompletePolygon(verticalLeftLine);
 
+            var edgeTable = this.FillingService.InitTables(picturePoly);
+            
+            this.LineService.Bmp = filteredBmp;
+            this.FillingService.RunFilling(edgeTable, this.MemoryService.GetFilter());
+            this.LineService.Bmp = this.Bmp;
+
+         
             return filteredBmp;
+        }
+
+        public void InitOwnFunctionChart()
+        {
+            OwnFunctionPoints.Clear();
+            OwnFunctionPoints.Add(new Point(0, 0));
+            OwnFunctionPoints.Add(new Point(255, 255));
+            this.RenderOwnFunction();
+        }
+
+        public void AddPointToOwnFunctionChart(int x, int y)
+        {
+            var pointSameXIdx = this.OwnFunctionPoints.FindIndex(p => p.X == x);
+            if (pointSameXIdx >= 0)
+            {
+                this.OwnFunctionPoints[pointSameXIdx] = new Point(x, y);
+            }
+            else
+            {
+                this.OwnFunctionPoints.Add(new Point(x, y));
+                this.OwnFunctionPoints = this.OwnFunctionPoints.OrderBy(p => p.X).ToList();
+            }
+        }
+
+        public void RenderOwnFunction()
+        {
+            var charPoints = this.ownFunctionChart.Series["OwnFunctionData"].Points;
+            charPoints.Clear();
+            for (int i = 0; i < OwnFunctionPoints.Count - 1; i++)
+            {
+                float a = (OwnFunctionPoints[i + 1].Y - OwnFunctionPoints[i].Y) /
+                    (float)(OwnFunctionPoints[i + 1].X - OwnFunctionPoints[i].X);
+                for (int j = OwnFunctionPoints[i].X; j < OwnFunctionPoints[i + 1].X; j++)
+                {
+                    charPoints.AddXY(j, OwnFunctionPoints[i].Y + a * (j - OwnFunctionPoints[i].X));
+                    // this math min max are done in case of rounding error cause overflow to -1 or 256
+                    this.mappedPoints[j] = Math.Max(Math.Min(
+                        Convert.ToInt32(OwnFunctionPoints[i].Y + a * (j - OwnFunctionPoints[i].X)), 255), 0);
+                }
+            }
+            charPoints.AddXY(OwnFunctionPoints[OwnFunctionPoints.Count - 1].X, OwnFunctionPoints[OwnFunctionPoints.Count - 1].Y);
+            this.mappedPoints[OwnFunctionPoints[OwnFunctionPoints.Count - 1].X] = Math.Max(Math.Min(
+                        Convert.ToInt32(OwnFunctionPoints[OwnFunctionPoints.Count - 1].Y), 255), 0);
+        }
+
+        private void addPointBtn_Click(object sender, EventArgs e)
+        {
+            this.AddPointToOwnFunctionChart(Convert.ToInt32(this.xNumeric.Value), Convert.ToInt32(this.yNumeric.Value));
+            this.RenderOwnFunction();
+            this.filtersChanged = true;
         }
     }
 }

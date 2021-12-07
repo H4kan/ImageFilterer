@@ -85,4 +85,20 @@ namespace ImageFiltererV2
                 Math.Min(Math.Max(Convert.ToInt32(255 * Math.Pow(color.B / (double)255, gammaCorrection)), 0), 255));
         }
     }
+
+    public class OwnFunction : IFilterHandler
+    {
+        private int[] points;
+        public OwnFunction(int [] points)
+        {
+            this.points = points;
+        }
+
+        // gamma correction algorithm from here
+        // https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-6-gamma-correction/
+        public Color EvaluateFilter(Color color)
+        {
+            return Color.FromArgb(points[color.R], points[color.G], points[color.B]);
+        }
+    }
 }

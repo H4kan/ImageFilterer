@@ -96,12 +96,12 @@ namespace ImageFiltererV2
                     return new BrightnessChange(this.form.brightnessChangeValue);
                 case FilterType.GammaCorrection:
                     // we need to trigger validation manually before filter applying
-                    this.form.gammaBox_Validating(null, null);
+                    this.form.validateGammaBox(null, null);
                     return new GammaCorrection(this.form.gammaValue);
                 case FilterType.Contrast:
                     return new Contrast(this.form.contrastValue);
                 case FilterType.OwnFunction:
-                    break;
+                    return new OwnFunction(this.form.mappedPoints);
             }
 
             return new Identity();

@@ -1,0 +1,36 @@
+﻿
+-------------------------------------------------------------------
+Krótki opis obsługi aplikacji
+-------------------------------------------------------------------
+
+Aplikacja umożliwia nakładanie filtrów funkcyjnych na wybrany obraz.
+
+Pierwszym działaniem wykonanym po uruchomieniu aplikacji powinno być załadowanie obrazu, przy pomocy przycisku Choose Image,
+dozwolone formaty to png i jpg, w przypadku załadowania większego obrazka niż maksymalny rozmiar zdefiniowany dla aplikacji, obrazek
+zostanie obcięty tak by mieścił się w wyznaczonym polu. Po załadowaniu obrazka widoczne staje się menu z filtrami i automatycznie
+aktualizowane wykresy dotyczące rozkładu kolorów na obrazku.
+
+Przycisk Add Polygon pozwala dodać na obrazek wielokąt. Po kliknięciu przycisku, wielokąt można zdefiniować poprzez klikanie kolejnych
+wierzchołków wielokąta LPM i zakończenie tworzenia wielokąta RPM.
+
+Przycisk Filter Polygon pozwala na dodanie filtra funkcyjnego na obszar ograniczony wielokątem, po wybraniu przycisku, na wielokątach
+pojawiają się przyciski, które umożliwiają wybór wielokąta do modyfikacji, na wielokąt nałożony zostanie filtr, aktualnie wybrany w
+menu filtrów.
+
+Przycisk Delete Polygon pozwala usunąć wielokąt.
+
+Przycisk Brush pozwala na użycie pędzla kołowego. Pędzel będzie zamalowywał obszar przefiltrowanym odpowiednikiem oryginalnego obrazu,
+filtr wybrany zostaje na podstawie menu filtrów.
+
+W menu filtrów dostępna jest lista filtrów, po wybraniu niektórych z nich dostępna jest modyfikacja parametru związanego z tym filtrem,
+przykładowo w przypadku korekcji gamma jest to wsp. gamma.
+
+Własną funkcję filtrowania można zdefiniować wybierając own function, a następnie dodanie punktów na wykres funkcji przy pomocy menu
+poniżej wykresu. Wybrany punkt można nadpisać podając punkt o tej samej współrzędnej x.
+
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+LPM - lewy przycisk myszy
+RPM - prawy przycisk myszy
